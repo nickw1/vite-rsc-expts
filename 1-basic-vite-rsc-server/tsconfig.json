@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+        
+        "noEmit": true,
+        "target": "esnext",
+        "module" : "esnext",
+        "moduleResolution" : "bundler",
+        "strict" : true,
+        "skipLibCheck" : true,
+        "jsx" : "react-jsx",
+        "types": ["vite/client", "@vitejs/plugin-rsc/types"],
+    },
+    "include": [
+        "framework/*.tsx",
+        "src/index.tsx"
+    ]
+}
