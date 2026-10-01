@@ -66,7 +66,9 @@ What is going on here?
 The first time I tried this I got this error:
 
 ```
-Failed to read a RSC payload created by a development version of React on the server while using a production version on the client. Always use matching versions on the server and the client.
+Failed to read a RSC payload created by a development version of React on the server
+while using a production version on the client. Always use matching versions on the
+server and the client.
 ```
 
 Looking into this, it appears to be due to the development version of React being used by default from the server, but the production version being used on the client when creating the bundle. It can be solved by setting `NODE_ENV` to `production` when running the server, e.g.
