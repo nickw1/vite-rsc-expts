@@ -34,4 +34,4 @@ So to summarise I'd be looking at a micro-framework containing:
 These experiments come in two stages, each with their own README as a development log:
 
 1. [Create a basic RSC server](1-basic-vite-rsc-server/README.md), based on Josh Wilson of Aha! Engineering's work - completed.
-2. Create a proof-of-concept for a micro-framework, integrating with Express initially - not yet started.
+2. [Create a proof-of-concept for a micro-framework, integrating with Express initially](2-with-express/README.md) - started, but still WIP.
