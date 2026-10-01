@@ -216,39 +216,6 @@ export default function App({ url }: AppProps) {
 ```
 Testing this revealed that the `Counter` component was indeed rendered, but predictably, it wasn't interactive because we've just rendered the static HTML. We have not performed hydration to populate the React DOM client-side, attach event listeners and generally make it interactive.
 
-### Exploring the RSC payload
-
-It's interesting to inspect the actual RSC payload. It consists of a series of entries, each labelled with a number or letter. The `0` entry appears to be the top-level entry, representing the rendered content, and in this example looks like this if we search for David Bowie as our artist:
-
-```
-0:["$","html",null,{"children":[["$","head",null,{"children":["$","title",null,{"children":"RSC"},"$1","$5",1]},"$1","$4",1],
-["$","body",null,{"children":[["$","h1",null,{"children":"React Server Component!"},"$1","$7",1],
-["$","$La",null,{},"$1","$8",1],["$","h2",null,{"children":["Songs by ","David Bowie"]},"$1","$b",1],
-["$","div",null,{"children":[["$","p","song296",{"children":["Space Oddity"," by ","David Bowie",", year ",1975]},"$1","$d",0],
-["$","p","song380",{"children":["Ashes to Ashes"," by ","David Bowie",", year ",1980]},"$1","$e",0],
-["$","p","song435",{"children":["Lets Dance"," by ","David Bowie",", year ",1983]},"$1","$f",0]]},"$1","$c",1]]},"$1","$6",1]]},
-#"$1","$3",1]
-```
-
-Clearly this is a nested representation of the rendered elements. It's interesting to look at the entry for the `Counter` client component, which appears to have a blank object for its content (as it is rendered later, by SSR) and `$La` in the position where the HTML element would go:
-
-```
-["$","$La",null,{},"$1","$8",1]
-```
-
-It's of note that there is no official spec for the RSC payload, see [Dan Abramov's article](https://overreacted.io/introducing-rsc-explorer/). Nonetheless you can get some insight into what's going on from the above.
-
-According to Dan Abramov, the `a` in `$La` is a reference to entry `a` in the payload, so entry `a` clearly represents the `Counter` component. If we look at the payload, there is an entry labelled `a`:
-```
-a:I["$9",[],"default",1]
-```
-it's labelled `I` (import?) and refers to `$9`, which, by similar logic, is entry `9` in the payload. Entry `9` in the payload refers to the source of the `Counter` module and `default`, from what I understand from the article, means use the default export from the module.
-
-```
-9:"/src/Counter.tsx"
-```
-You can see that the `Counter` component is not being serialised at this stage: it happens later, at the SSR stage. The payload merely includes the reference to the counter component.
-
 ### Implementing client handling
 
 With all that, it's time to move on to implementing the client-side process of hydrating the client components. At the moment, the SSR entry point is rendering client components as HTML, and sending them back to the client. However this is not "live" HTML - it's pure content, with no interactivity added. To add interactivity, the client needs to receive a representation of the React DOM which can be loaded into memory with event handlers, etc, attached. Pre-RSC, this was done by a further request to the server, but with RSC we don't have to do that. Given we already have the RSC payload, which represents the document, we can just send that on to the client from the SSR entrypoint - no need for another round trip to the server.
@@ -341,40 +308,5 @@ You can hopefully see here that there is non-interactive, server-generated HTML 
 <script id="_R_">import("/@id/__x00__virtual:vite-rsc/entry-browser")</script>
 ```
 This will load the payload and using it, perform hydration so that we end up with a properly interactive page.
-
-## What if the root component was a client component?
-
-One question I asked myself is, what would be returned if the `index.tsx` of the `src` folder, i.e. the "RSC", was a client
-component? I tried this out by saving the counter component as `index.tsx` in `src` and examining the output. The RSC entry point produced this:
-
-```
-2:"/src/index.tsx$$cache=r94qbph4pc"
-3:I["$2",[],"default",1]
-:N1790772602748.376
-0:["$","$L3",null,{"url":"http://localhost:5173/favicon.ico"},null,"$1",0]
-```
-
-The SSR produced this output. Firstly the HTML stream before injection of RSC payload:
-```html
-<div>Counter: <!-- -->0<button>Increase Counter!</button></div><script id="_R_">
-import("/@id/__x00__virtual:vite-rsc/entry-browser")
-</script>
-```
-
-Secondly the HTML stream with the RSC payload injected:
-```html
-<div>Counter: <!-- -->0<button>Increase Counter!</button></div>
-<script id="_R_">import("/@id/__x00__virtual:vite-rsc/entry-browser")</script>
-<script>(self.__FLIGHT_DATA||=[]).push("2:\"/src/index.tsx$$cache=r94qbph4pc\"\n
-3:I[\"$2\",[],\"default\",1]\n:N1790772602748.376\n1:[[\"handleRequest\",\"/home/nick/src/vitersc-basic/framework/entry.rsc.tsx\",
-17,79,14,1,false]]\n0:[\"$\",\"$L3\",null,{\"url\":\"http://localhost:5173/favicon.ico\"},null,\"$1\",0]\n")</script>
-</body></html>
-```
-
-If you look at this, you can see the same sequence of events occurs even if the root component is a client component.
-The RSC entry point receives the request, but rather than trying to render the JSX directly, it creates a payload merely with a 
-*reference* to the client component (entry 3, referenced from entry 2).
-The SSR then generates non-interactive HTML from the payload and injects the payload into it, to be hydrated on the client,
-as before.
 
 
