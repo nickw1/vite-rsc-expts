@@ -1,0 +1,41 @@
+import * as ReactServer from '@vitejs/plugin-rsc/rsc';
+
+import type { ComponentType } from 'react';
+import type { AppProps } from './types';
+
+type ComponentImport = {
+    default: ComponentType<AppProps>
+};
+
+export default async function handleRequest(request: Request): Promise<Response> {
+
+    const appModule = await import.meta.viteRsc.import<
+       ComponentImport
+    >(
+        '/home/user/src/vitersc-basic/3a-use-3/src/index.tsx', { environment: 'rsc' }
+    );
+
+    const App = appModule.default;
+
+    // Convert RSC JSX to RSC payload
+    // This "framework" assumes that the RSC component is in the src directory and named index.jsx
+    let rscStream = ReactServer.renderToReadableStream( 
+      <App url={request.url} />
+    );
+
+    const ssrEntryModule = await import.meta.viteRsc.import<
+        typeof import('./entry.ssr.tsx')
+    >(
+        './entry.ssr.tsx', { environment: 'ssr' }
+    );
+
+    // Render the RSC stream to the HTML using the SSR module (i.e. server-side rendering)
+    let htmlStream = await ssrEntryModule.renderHTML(rscStream) as ReadableStream;
+
+
+    return new Response(htmlStream, {
+        headers: {
+            'Content-Type': 'text/html;charset=utf-8'
+        }
+    });
+}
