@@ -3,16 +3,17 @@ import * as ReactServer from '@vitejs/plugin-rsc/rsc';
 import type { ComponentType } from 'react';
 import type { AppProps } from './types';
 
+import { resolve } from 'path';
 type ComponentImport = {
     default: ComponentType<AppProps>
 };
 
 export default async function handleRequest(request: Request): Promise<Response> {
-
+    const appPath = resolve(process.cwd(), 'src/index.tsx');
     const appModule = await import.meta.viteRsc.import<
        ComponentImport
     >(
-        '/home/user/src/vitersc-basic/3a-use-3/src/index.tsx', { environment: 'rsc' }
+        appPath, { environment: 'rsc' }
     );
 
     const App = appModule.default;
