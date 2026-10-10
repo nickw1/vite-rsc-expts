@@ -9,11 +9,11 @@ type ComponentImport = {
 };
 
 export default async function handleRequest(request: Request): Promise<Response> {
-    const appPath = resolve(process.cwd(), 'src/index.tsx');
+   
     const appModule = await import.meta.viteRsc.import<
        ComponentImport
     >(
-        appPath, { environment: 'rsc' }
+        '[APP_ENTRY_RSC]', { environment: 'rsc' } // This fails if we use an expression containing variables. Must be a string literal
     );
 
     const App = appModule.default;

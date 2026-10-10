@@ -7,7 +7,7 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-element-to-jsx-string": "^17.0.1",
-    "vite-rsc-example": "file:../3-npm-package/vite-rsc-example-0.0.1-pre52.tgz"
+    "vite-rsc-example": "file:../3-npm-package/vite-rsc-example-0.0.1-pre71.tgz"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^9.6.0",

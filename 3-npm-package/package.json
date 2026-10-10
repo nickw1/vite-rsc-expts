@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "vite-rsc-example",
-  "version": "0.0.1-pre52",
+  "version": "0.0.1-pre71",
   "files": ["framework", "dist", "vite.config.mjs"],
   "dependencies": {
     "@types/express": "^5.0.6",
@@ -34,7 +34,7 @@
     "exports": {
     "./entry.rsc": "./framework/entry.rsc.tsx",
     "./entry.ssr": "./framework/entry.ssr.tsx",
-    "./entry.client": "./framework/entry.rsc.client",
+    "./entry.client": "./framework/entry.client.tsx",
     "./types": "./framework/types/index.ts"
   }
 }
