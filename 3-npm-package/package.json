@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "vite-rsc-example",
-  "version": "0.0.1-pre71",
+  "version": "0.0.1",
   "files": ["framework", "dist", "vite.config.mjs"],
   "dependencies": {
     "@types/express": "^5.0.6",

@@ -12,6 +12,7 @@
     },
     "include": [
         "framework/*.tsx",
+        "framework/vite-rsc-example-plugin-ambient.ts",
         "src/index.tsx"
     ]
 }

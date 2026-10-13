@@ -23,7 +23,7 @@ export async function renderHTML(rscStream: ReadableStream) {
     let htmlStream : ReadableStream = await renderToReadableStream(<SsrRoot />, {
        bootstrapScriptContent: `import(${JSON.stringify(ReactClient.getClientEntryUrl())})`
     });
-    htmlStream = await examineStream(htmlStream);
+   // htmlStream = await examineStream(htmlStream);
 
     const htmlStreamWithPayload = htmlStream.pipeThrough(
         injectRSCPayload(rscStream2)

@@ -3,25 +3,25 @@ import * as ReactServer from '@vitejs/plugin-rsc/rsc';
 import type { ComponentType } from 'react';
 import type { AppProps } from './types';
 
-import { resolve } from 'path';
-type ComponentImport = {
-    default: ComponentType<AppProps>
-};
-
 export default async function handleRequest(request: Request): Promise<Response> {
-   
-    const appModule = await import.meta.viteRsc.import<
-       ComponentImport
-    >(
-        '[APP_ENTRY_RSC]', { environment: 'rsc' } // This fails if we use an expression containing variables. Must be a string literal
-    );
 
-    const App = appModule.default;
+    const glob = import.meta.glob('/src/**/*.{js,jsx,ts,tsx}');
+    const componentRoutes: { [path: string]: ComponentType<AppProps> } = {};
+    for (const [path, loadModule] of Object.entries(glob)) {
+        const replace = path.replace(/^\/src|(index)?\.(jsx|tsx|js|ts)$/g, "").toLowerCase();
+        componentRoutes[replace] = ((await loadModule() as any).default) as ComponentType<AppProps>;
+    }
+
+    console.log("componentRoutes:");
+    console.log(componentRoutes);
+  
+    const path = new URL(request.url).pathname;
+
+    const App = componentRoutes[path] ?? componentRoutes[`${path}/`] ?? null;
 
     // Convert RSC JSX to RSC payload
-    // This "framework" assumes that the RSC component is in the src directory and named index.jsx
-    let rscStream = ReactServer.renderToReadableStream( 
-      <App url={request.url} />
+    let rscStream = ReactServer.renderToReadableStream(
+        App === null ? <h1>Cannot find component for path {path}</h1> : <App url={request.url} />
     );
 
     const ssrEntryModule = await import.meta.viteRsc.import<
