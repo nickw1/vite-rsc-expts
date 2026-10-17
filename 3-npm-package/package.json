@@ -31,7 +31,7 @@
     "@types/better-sqlite3@9.6.0": true,
     "better-sqlite3@13.0.3": true
   },
-    "exports": {
+  "exports": {
     "./entry.rsc": "./framework/entry.rsc.tsx",
     "./entry.ssr": "./framework/entry.ssr.tsx",
     "./entry.client": "./framework/entry.client.tsx",
