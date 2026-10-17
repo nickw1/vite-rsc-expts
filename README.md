@@ -31,7 +31,8 @@ So to summarise I'd be looking at a micro-framework containing:
 - Easy access to request and header data from the RSCs;
 - but with API endpoints, middleware, authentication etc handled by the server-side routing library.
 
-These experiments come in two stages, each with their own README as a development log:
+These experiments come in multiple stages, each with their own README as a development log:
 
-1. [Create a basic RSC server](1-basic-vite-rsc-server/README.md), based on Josh Wilson of Aha! Engineering's work - completed.
-2. [Create a proof-of-concept for a micro-framework, integrating with Express initially](2-with-express/README.md) - simple Express integration completed.
+1. [Create a basic RSC server](1-basic-vite-rsc-server/README.md), based on Josh Wilson of Aha! Engineering's work.
+2. [Create a proof-of-concept for a micro-framework, integrating with Express](2-with-express/README.md).
+3. [Creating an installable NPM package of the framework](3-npm-package/README.md) - completed for production mode.
