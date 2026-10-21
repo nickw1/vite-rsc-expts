@@ -20,9 +20,9 @@ export async function createDevServer(app: Express) {
 }
 ```
 
-You just need to call Vite's `createServer` method, specify the project root and specify also that it's running in middleware mode. Then you add the middlewares of the Vite server to Express, as Express middleware.
+You just need to call Vite's `createServer` function, specify the project root and specify also that it's running in middleware mode. Then you add the middlewares of the Vite server to Express, as Express middleware.
 
-The difficulty came in attempting to load the RSC entry point. The issue, once again, is that this needed to run wthin the RSC environment, which is not the default. What has to be done is to obtain the RSC environment as a `RunnableDevEnvironment` from the Vite dev server and then obtain a *module runner* to import the given module to run within that environment; see the [Vite docs](https://vite.dev/guide/api-environment-frameworks). The RSC entrypoint is thus imported using the module runner. Here is the revised `createDevServer()` which does this; note that this is exported from the main library file `main.ts`, i.e. Vite's `build.lib.entry` setting. (As you might be able to guess we need to handle our framework as a Vite library project).
+The difficulty came in attempting to load the RSC entry point. The issue, once again, is that we need to run this within the RSC environment, which is not the default. What has to be done is to obtain the RSC environment as a `RunnableDevEnvironment` from the Vite dev server and then obtain a *module runner* to import the given module to run within that environment; see the [Vite docs](https://vite.dev/guide/api-environment-frameworks). The RSC entrypoint is thus imported using the module runner. Here is the revised `createDevServer()` which does this; note that this is exported from the main library file `main.ts`, i.e. Vite's `build.lib.entry` setting. (As you might be able to guess we need to handle our framework as a Vite library project).
 
 ```typescript
 export async function createDevServer(app: Express) {
@@ -44,7 +44,7 @@ export async function createDevServer(app: Express) {
 ```
 
 Note how we return the imported `handleRequest` function, so we can then call it from our Express route handler.
-This is one of the main issues with `vite-express` in fact. `vite-express` appears to create the Vite dev server at the same time as it starts listening on its port, so there is no opportunity for us to import the RSC entrypoint as above, and call it in the appropriate route handler.
+This is one of the main issues with using `vite-express` for this use case. `vite-express` appears to create the Vite dev server at the same time as it starts listening on its port, so there is no opportunity for us to import the RSC entrypoint as above, and call it in the appropriate route handler.
 
 ### Externalisation
 
@@ -56,20 +56,23 @@ export async function getRequestHandler(app: Express) {
     return handleRequest;
 }
 ```
-On building and running however It appeared to be referencing a browser-based function with that name and erroring when it was not found. 
+On building and running however it errored with a message which suggested it was unable to find what looked like browser-based polyfills for Node functions.
 
-This turned out to be because it was attempting to bundle `node:path` when the framework is built, with warnings such as the below.
+This turned out to be because it was attempting to bundle Node packages such as `node:path` and others when the framework is built, 
+with warnings such as the below.
 
 
 ```
-[plugin rolldown:vite-resolve] Module "node:path" has been externalized for browser compatibility, imported by "/home/nick/src/vitersc-basic/4-with-dev-server/node_modules/rolldown/dist/shared/create-bundler-option-YGKfBl_D.mjs". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:path" has been externalized for browser compatibility, imported by 
+".../dist/shared/create-bundler-option-YGKfBl_D.mjs". 
+See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
 ```
-The Vite docs referred to in the warning gives this quote:
+The [Vite docs referred to in the warning](https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility) gives this quote:
 
 >This is because Vite does not automatically polyfill Node.js modules.
 >We recommend avoiding Node.js modules for browser code to reduce the bundle size, although you can add polyfills manually. If the module is imported from a third-party library (that's meant to be used in the browser), it's advised to report the issue to the respective library.
 
-Essentially, the bundler is trying to process `node:path` and potentially polyfill it for a browser environment (the framework bundler does not know that this code will be server-only). So the `node:path` (and other Node) imports are processed rather than kept intact, and lead to errors at runtime in the consuming app due to the lack of the polyfill. 
+Essentially, the bundler is trying to process `node:path` and potentially polyfill it for a browser environment (the framework bundler does not know that this code will be server-only). So the `node:path` (and other Node) imports are processed rather than kept intact, and lead to errors at runtime in the consuming app due to the lack of actual polyfills for the Node functions (the Node imports are processed by the bundler, but polyfills are not produced).
 
 What we really want instead is for the imports of Node packages to be left intact (unprocessed by the framework bundler) to be processed by the consuming app. Thankfully we can do this by means of Rolldown (Vite's bundler) *externalisation*. We specify an array of packages to externalise in the `rolldownOptions.external` option. All of these packages will not be processed as part of the bundling process, with `import` statements left intact for the consumer app's bundling process (or execution, for Node) to deal with.
 
