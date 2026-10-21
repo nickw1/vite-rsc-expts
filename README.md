@@ -36,3 +36,4 @@ These experiments come in multiple stages, each with their own README as a devel
 1. [Create a basic RSC server](1-basic-vite-rsc-server/README.md), based on Josh Wilson of Aha! Engineering's work.
 2. [Create a proof-of-concept for a micro-framework, integrating with Express](2-with-express/README.md).
 3. [Creating an installable NPM package of the framework](3-npm-package/README.md) - completed for production mode.
+4. [Implementing a dev server](4-with-dev-server/README.md)
