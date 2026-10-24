@@ -3,6 +3,7 @@ import Database from "better-sqlite3";
 import type { AppProps } from 'vite-rsc-example/types';
 
 import Counter from './Counter';
+import AddSong from './AddSong';
 
 type Song = { id: number, title: string, artist: string, year: number };
 
@@ -25,6 +26,7 @@ export default function App({ url }: AppProps) {
             <body>
                 <h1>React Server Component!</h1>
                 <Counter />
+                <AddSong />
                 <h2>Songs by {artist || "all artists"}</h2>
                 <div>{output}</div>
             </body>

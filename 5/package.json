@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "vite-rsc-example",
-  "version": "0.0.3-pre16",
+  "version": "0.0.3-pre103",
   "types": "./framework/types/index.ts",
   "files": [
     "framework",
