@@ -5,10 +5,7 @@ import { rscStream } from 'rsc-html-stream/client';
 import type { ReturnValue } from './types';
 
 
-const [str1, ] = rscStream.tee();
-
-
-const jsx = ReactClient.createFromReadableStream<ReactNode>(str1);
+const jsx = ReactClient.createFromReadableStream<ReactNode>(rscStream);
 
 function ClientRoot() {
     return use(jsx);
@@ -19,6 +16,9 @@ hydrateRoot(
     <ClientRoot />
 );
 
+
+// Based on the @vitejs/plugin-rsc example at:
+// https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-rsc/examples/basic/src/framework/entry.browser.tsx
 
 ReactClient.setServerCallback(async (id, args) => {
     console.log(`client: Detected server action request: ID is ${id}`);
@@ -38,7 +38,6 @@ ReactClient.setServerCallback(async (id, args) => {
     console.log("Headers of created request:");
     console.log(renderRequest.headers);
     const payload = await ReactClient.createFromFetch<ReturnValue>(fetch(renderRequest));
-    //setPayload(payload); // store payload in state, not sure why needed
     const { ok, data } = payload;
     if (!ok) throw data;
     return data;

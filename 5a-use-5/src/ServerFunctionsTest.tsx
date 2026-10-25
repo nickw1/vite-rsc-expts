@@ -3,7 +3,7 @@
 import { useState, useActionState } from "react";
 import { testActionWithParam, testActionWithState } from "../actions";
 
-export default function AddSong() {
+export default function ServerFunctionsTest() {
     const [reply, setReply] = useState("");
     const [counter, setCounter] = useState(1);
     const [state, testActionWithStateEnabled] = useActionState(testActionWithState, { title: "<unknown>", artist: "<unknown>" });
