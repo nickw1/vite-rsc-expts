@@ -1,8 +1,7 @@
 {
   "type": "module",
   "name": "vite-rsc-example",
-  "version": "0.0.3-pre103",
-  "types": "./framework/types/index.ts",
+  "version": "0.0.3-pre114",
   "files": [
     "framework",
     "dist",
@@ -36,6 +35,10 @@
     ".": {
       "import": "./dist/vite-rsc-example.es.js",
       "types": "./framework/types/index.ts"
+    },
+    "./client": {
+      "import": "./dist/vite-rsc-example.client.es.js",
+      "types": "./framework/types/client.ts"
     },
     "./entry.rsc": "./framework/entry.rsc.tsx",
     "./entry.ssr": "./framework/entry.ssr.tsx",

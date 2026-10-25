@@ -1,0 +1,1 @@
+// A placeholder for type definitions for functions in client.ts.

@@ -11,15 +11,15 @@ export default defineConfig({
     ],
     build: {
         lib: {
-            entry: resolve(import.meta.dirname, 'framework/main.ts'),
+            entry: { main: resolve(import.meta.dirname, 'framework/main.ts'), client: resolve(import.meta.dirname, 'framework/client.ts') },
             name: 'vite-rsc-example',
-            fileName: format => `vite-rsc-example.${format}.js`,
+            fileName: (format, entryName) => `vite-rsc-example.${entryName == "main" ? "": `${entryName}.`}${format}.js`,
             formats: ["es"]
         },
 
         minify: false,
         rolldownOptions: {
-           external: id => id.startsWith("node:") || id.startsWith("@vitejs/") || ['react', 'react-dom', 'vite', 'express'].indexOf(id) >= 0
+            external: id => id.startsWith("node:") || id.startsWith("@vitejs/") || ['react', 'react-dom', 'vite', 'express'].indexOf(id) >= 0
         }
     },
 });
