@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "vite-rsc-example",
-  "version": "0.0.3-pre114",
+  "version": "0.0.3",
   "files": [
     "framework",
     "dist",
@@ -24,7 +24,9 @@
   },
   "peerDependencies": {
     "express": "^5.2.1",
-    "@types/express": "^5.0.6"
+    "@types/express": "^5.0.6",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
   },
   "scripts": {
     "dev": "vite dev",

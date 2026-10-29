@@ -2,6 +2,7 @@ import * as ReactServer from '@vitejs/plugin-rsc/rsc';
 
 import type { ComponentType, ReactElement } from 'react';
 import type { AppProps, RscPayload, ReturnValue } from './types';
+import { c } from '@vitejs/plugin-rsc/index-XXYjyFr6';
 
 //import examineStream from './utils/examineStream';
 //import { rscStream } from 'rsc-html-stream/client';
@@ -11,11 +12,16 @@ import type { AppProps, RscPayload, ReturnValue } from './types';
 export default async function handleRequest(request: Request): Promise<Response> {
 
     console.log("handleRequest()");
-  
+
     let rscStream: ReadableStream | null = null;
     const url = new URL(request.url);
 
     console.log(`Method: ${request.method} pathname ${url.pathname}`);
+
+    const noSsr = request.headers.get("x-no-ssr") ? true : false;
+    
+    console.log(`rsc: noSsr? ${noSsr}`);
+
     let isServerFunction = false;
 
     if (request.method == 'POST' && url.pathname.endsWith("_.rsc")) {
@@ -62,26 +68,36 @@ export default async function handleRequest(request: Request): Promise<Response>
         );
 
 
-        const ssrEntryModule = await import.meta.viteRsc.import<
-            typeof import('./entry.ssr.tsx')
-        >(
-            './entry.ssr.tsx', { environment: 'ssr' }
-        );
+        if (noSsr) {
+            console.log('rsc: noSsr is true, so sending back the raw RSC stream');
+            return new Response(rscStream, {
+                status,
+                headers: {
+                    'content-type': 'text/x-component;charset=utf-8' // I presume this content type triggers the appropriate client action
+                }
+            });
+        } else {
+            const ssrEntryModule = await import.meta.viteRsc.import<
+                typeof import('./entry.ssr.tsx')
+            >(
+                './entry.ssr.tsx', { environment: 'ssr' }
+            );
 
-        // check that the RSC payload is good
+            // check that the RSC payload is good
 
-        // console.log('RSC stream is:');
-        //rscStream = await examineStream(rscStream);
+            // console.log('RSC stream is:');
+            //rscStream = await examineStream(rscStream);
 
-        // Render the RSC stream to the HTML using the SSR module (i.e. server-side rendering)
-        let htmlStream = await ssrEntryModule.renderHTML(rscStream) as ReadableStream;
+            // Render the RSC stream to the HTML using the SSR module (i.e. server-side rendering)
+            let htmlStream = await ssrEntryModule.renderHTML(rscStream) as ReadableStream;
 
-        return new Response(htmlStream, {
-            headers: {
-                'Content-Type': 'text/html;charset=utf-8'
-            },
-            status
-        });
+            return new Response(htmlStream, {
+                headers: {
+                    'Content-Type': 'text/html;charset=utf-8'
+                },
+                status
+            });
+        }
     }
 }
 

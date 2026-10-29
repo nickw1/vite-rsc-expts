@@ -17,15 +17,10 @@ export async function createDevServer(app: Express) {
         root: process.cwd(),
         server: { middlewareMode: true },
         configFile: false,
-        plugins: [
+        plugins: [,
             react(),
             rsc({
                 entries: {
-                    /*
-                    rsc: resolve(import.meta.dirname, 'node_modules/vite-rsc-example/framework/entry.rsc.tsx'),
-                    ssr: resolve(import.meta.dirname, 'node_modules/vite-rsc-example/framework/entry.ssr.tsx'),
-                    client: resolve(import.meta.dirname, 'node_modules/vite-rsc-example/framework/entry.client.tsx')
-                    */
                     rsc: require.resolve('vite-rsc-example/entry.rsc'),
                     ssr: require.resolve('vite-rsc-example/entry.ssr'),
                     client: require.resolve('vite-rsc-example/entry.client')

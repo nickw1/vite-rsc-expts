@@ -1,8 +1,11 @@
 import { use, type ReactNode } from 'react';
 import { hydrateRoot } from 'react-dom/client';
-import * as ReactClient from '@vitejs/plugin-rsc/browser';
+
+
 import { rscStream } from 'rsc-html-stream/client';
 import type { ReturnValue } from './types';
+import { setCallback } from 'vite-rsc-example/client';
+import * as ReactClient from '@vitejs/plugin-rsc/browser';
 
 
 const jsx = ReactClient.createFromReadableStream<ReactNode>(rscStream);
@@ -11,11 +14,21 @@ function ClientRoot() {
     return use(jsx);
 }
 
-hydrateRoot(
+
+
+const root = hydrateRoot(
     document,
     <ClientRoot />
 );
 
+console.log("calling setCallback()");
+setCallback(async(fetchPromise: Promise<Response>) => {
+    // response is an RSC payload
+    const tree = await ReactClient.createFromFetch<ReactNode>(fetchPromise);
+    console.log('Got tree');
+    root.render(tree);
+    console.log('Tree rendered');
+});
 
 // Based on the @vitejs/plugin-rsc example at:
 // https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-rsc/examples/basic/src/framework/entry.browser.tsx

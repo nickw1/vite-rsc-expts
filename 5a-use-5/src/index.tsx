@@ -16,7 +16,7 @@ export default function App({ url }: AppProps) {
     const db = new Database("./wadsongs.db");
     const stmt = artist ? db.prepare("SELECT * FROM wadsongs WHERE artist=?") : db.prepare("SELECT * FROM wadsongs");
     const results = (artist ? stmt.all(artist) : stmt.all()) as Song[];
-    const output = results.map((song: Song) => <p key={`song${song.id}`}>{song.title} by {song.artist}, year {song.year}</p>);
+    const output = results.map((song: Song, index: number) => <tr key={`song${song.id}`} style={{backgroundColor: index % 2 ? '#c0c0ff' : '#ffc0c0'}}><td>{song.title}</td><td>{song.artist}</td><td>{song.year}</td></tr>);
     
     return (
         <html>
@@ -28,7 +28,7 @@ export default function App({ url }: AppProps) {
                 <Counter />
                 <ServerFunctionsTest />
                 <h2>Songs by {artist || "all artists"}</h2>
-                <div>{output}</div>
+                <div><table><thead><tr><th>Title</th><th>Artist</th><th>Year</th></tr></thead><tbody>{output}</tbody></table></div>
             </body>
         </html>
     );
