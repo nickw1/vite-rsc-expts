@@ -3,30 +3,34 @@
 
 
 import { useEffect } from 'react';
-import type { Callback } from './types/client';
+import type { ReactNode } from 'react';
+import type { Root } from 'react-dom/client';
+import * as ReactClient from '@vitejs/plugin-rsc/browser';
 
-let callback: Callback | null = null;
 
+let root: Root | null = null;
 
-export function setCallback(callbackIn: Callback) {
-    console.log("Setting root in setCallback()");
-    callback = callbackIn;
+export function setRoot(rootIn: Root) {
+    root = rootIn;
 }
 
 export async function refresh() {
     console.log(`client: fetching ${window.location.href}`);
 
     try {
-        if (callback !== null) {
-            await callback(fetch(window.location.href, {
+        if (root !== null) {
+            const tree = await ReactClient.createFromFetch<ReactNode>(fetch(window.location.href, {
                 headers: {
                     'Cache-Control': 'no-cache',
                     'x-no-ssr': '1'
                 }
             }));
-            console.log("callback has completed");
+            console.log('Got tree');
+            root.render(tree);
+            console.log('Tree rendered');
+
         } else {
-            console.log("callback cannot call - is null");
+            console.log("cannot render tree - root is null");
         }
     } catch (e) {
         console.error('refresh(): Error', e);

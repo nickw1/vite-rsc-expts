@@ -6,8 +6,6 @@ import type { AppProps, RscPayload, ReturnValue } from './types';
 
 export default async function handleRequest(request: Request): Promise<Response> {
 
-    console.log("handleRequest()");
-
     let rscStream: ReadableStream | null = null;
     const url = new URL(request.url);
 

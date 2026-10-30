@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "vite-rsc-example",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "files": [
     "framework",
     "dist",

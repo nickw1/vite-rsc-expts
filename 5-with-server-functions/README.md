@@ -28,7 +28,7 @@ Thus, the plugins and entrypoints are specified explicitly when the dev server i
 
 Doing this, however, led to a new error: the dev server reported it could not handle requests for the  `/@react-refresh` path. This is a special Vite-injected path which handles auto-refresh in the dev server and is part of the React Vite plugin, thus resides inside the `@vitejs/plugin-react` package, and is handled normally by the Vite middleware. But it was somehow getting through to the RSC entrypoint instead as a component request, which rejected it due to no matching component with that path.
 
-The problem turned out to be that it could not find the react-refresh code (`refresh-runtime.js`) because it was looking in the wrong place. It was looking inside the `vite-rsc-example` package for it, rather than where it should have been looking, i.e. in `@vitejs/plugin-react`. It turns out that the react-refresh code is not imported as a module in the normal way but loaded with `readFileSync()` from the current directory, so its loading will not be processed by the bundler. It will just be loaded from whatever directory the React plugin's code is being processed from.
+The problem turned out to be that it could not find the react-refresh code (`refresh-runtime.js`) because it was looking in the wrong place. It was looking inside the `vite-rsc-example` package for it, rather than where it should have been looking, i.e. in `@vitejs/plugin-react`. It turns out that the react-refresh code is not imported as a module in the normal way but loaded with `readFileSync()` from the current directory, so its loading will not be processed by the bundler. It will just be loaded from whatever directory the React plugin's code is being processed from, which will now be the directory within the installed `vite-rsc-example` package.
 
 So the precise error log was this:
 
@@ -197,7 +197,9 @@ Having implemented Server Functions, it became apparent that a further fairly es
 
 But how do you refresh? This was a little bit trickier to work out but you essentially have to tell the RSC server to send RSC payload *directly back to the client*, bypassing SSR. The client can then receive the payload and update the component tree.
 
-The first attempt was not successful and produced a somewhat tricky-to-work out bug. Firstly I took the client entrypoint and stored the return value of `hydrateRoot` in a variable `root` (type `Root`) which can be later used to apply a new tree to:
+### Client side
+
+Firstly I took the client entrypoint and stored the return value of `hydrateRoot` in a variable `root` (type `Root`) which can be later used to apply a new tree to:
 
 ```tsx
 import { setRoot } from './client';
@@ -210,7 +212,7 @@ const root = hydrateRoot(
 setRoot(root);
 ```
 
-`client.ts` was a separate standalone module which would contain the `refresh()` function, allowing consumers to import `refresh()` without having to import the set of RSC entrypoints, which leads to issues. The initial attempt at refresh handling in `client.ts` was as follows:
+`client.ts` was a separate standalone module which would contain the `refresh()` function, allowing consumers to import `refresh()` without having to import the set of RSC entrypoints, which leads to issues. The refresh handling in `client.ts` was as follows. The `root` is supplied from the client entrypoint. We then fetch our component tree as an RSC payload from the server (more on this below) and pass it to the root's `render()` method. Note how we pass in a custom header to the RSC server again: `x-no-ssr`. This tells the server to send the payload back to the client, bypassing SSR.
 
 ```typescript
 let root: Root | null;
@@ -251,8 +253,92 @@ export default ServerFunctionsTest {
 }
 ```
 
-The presumption was that there would be a single instance of `client.ts`, which would be shared between the client RSC entrypoint and the consuming component (`ServerFunctionsTest`). However it turned out that, even though the instance of `client.ts` imported from the client RSC entrypoint initialised `root`, the `root` reference in the instance imported from `ServerFunctionsTest` was still `null` and thus the `refresh()` function could not run correctly. 
+The presumption in implementing this was that there would be a single instance of `client.ts`, which would be shared between the client RSC entrypoint and the consuming component (`ServerFunctionsTest`). However it turned out that, even though the instance of `client.ts` imported from the client RSC entrypoint initialised `root`, the `root` reference in the instance imported from `ServerFunctionsTest` was still `null` and thus the `refresh()` function could not run correctly. 
 
-While I haven't seen any confirmation of this, I believe the reason is because the `client.ts` imported from the client RSC entrypoint is imported unbundled (because, as we saw earlier the client RSC entrypoint is not bundled but imported directly from the consuming app) while the `client.ts` imported by the `ServerFunctionsTest` consumer component is taken from the `vite-rsc-example` plugin. Thus they have different sources and are different instances, and we cannot share the `root` between them.
+While I haven't seen any confirmation of this, I believe the reason is because the `client.ts` imported from the client RSC entrypoint is imported unbundled (as we saw earlier the client RSC entrypoint is not bundled but imported directly from the consuming app) while the `client.ts` imported by the `ServerFunctionsTest` consumer component is taken from the `vite-rsc-example` package and its bundle. Thus they have different sources and are different instances, and we cannot share the `root` between them.
 
-How was this resolved? I had to find an approach which avoided imports of the same module from different sources. This could be done by keeping the tree-rendering code in the client RSC entrypoint, and passing it to the 
+How was this resolved? It was simply a case of using a consistent import, i.e. change the import of `setRoot()` in the RSC client entry point to a package-referenced import:
+
+```tsx
+import { refresh } from 'vite-rsc-example/client';
+```
+
+### Server side
+
+As mentioned above, the server needs to be modified to send back RSC payload directly to the client if requested by the `refresh()` function. As we have seen, this is done via a custom `x-no-ssr` HTTP header. The code below, in the non-Server Function path, performs this:
+
+```typescript
+ if (noSsr) {
+    return new Response(rscStream, {
+        status,
+        headers: {
+            'content-type': 'text/x-component;charset=utf-8' // I presume this content type triggers the appropriate client action
+        }
+    });
+} else {
+    const ssrEntryModule = await import.meta.viteRsc.import<
+        typeof import('./entry.ssr.tsx')
+    >(
+        './entry.ssr.tsx', { environment: 'ssr' }
+    );
+
+
+    // Render the RSC stream to the HTML using the SSR module (i.e. server-side rendering)
+    let htmlStream = await ssrEntryModule.renderHTML(rscStream) as ReadableStream;
+
+    return new Response(htmlStream, {
+        headers: {
+            'Content-Type': 'text/html;charset=utf-8'
+        },
+        status
+    });
+}
+```
+So you can see that the key difference is that if we are not SSR-ing, we send the payload directly back to the client (in our case, it will be picked up in `refresh()`), while if we are, we call the SSR endpoint as we did before and send the obtained HTML back to the client.
+
+### The `useRefresh()` hook
+
+We now have a working `refresh()` function. However at the moment we have to manually call it when we get a response back from the Server Function. This can be done but is not ideal particularly if we are employing `useActionState` with a form to update client-side state automatically with the return value of the Server Function.
+
+We could however perform auto-refresh via a `useRefresh()` custom hook, which takes an array of dependencies as a parameter and calls an effect, passing that array of dependencies on to the effect. If we pass in a property of the action state (e.g. the allocated ID in the database if we are adding a new record), then we can trigger a refresh automatically if that property changes. So here is such a `useRefresh()` hook:
+
+```typescript
+export function useRefresh<T>(dependencies?: Array<T>, callback?: () => void) {
+    useEffect(() => {
+        (async () => {
+            await refresh();
+            callback?.();
+        })();
+    }, dependencies);
+}
+```
+
+Fairly straightforward; I have also added an optional callback to run when the refresh has completed.
+
+This is then used in the consuming app's component as follows:
+
+```tsx
+import { useRefresh } from 'vite-rsc-example/client';
+import { addSong } from '../actions';
+
+export default function ServerFunctionsTest() {
+    const [addSongState, addSongWithState] = useActionState(addSong, { id: 0 as number | bigint });
+
+    useRefresh([addSongState.id]);
+    // ... etc ...
+}
+```
+So, a refresh is triggered when `addSongState.id` changes; it will do when the `addSong()` Server Function returns.
+
+### Did this work?
+
+Yes, eventually, but only after a further change was made. I needed to specify `react` and `react-dom` as peer dependencies in the framework `package.json`. This is a good idea in any case, as it ensures that versions of React compatible with the version used to develop the framework will be installed by the client.
+
+Even though in this case, all React versions were 19.3 so in theory there should have been no problems even with the omission of peer dependency declarations, I was getting a very hard-to-diagnose bug where the consuming package and the framework were using two separate instances of the same version of React, and the React used for `useEffect()` in the `useRefresh()` hook was apparently null at the SSR stage even though it should in theory be available. 
+
+I haven't got a definitive answer on this, but this may be due to the fact that peer dependency declaration ensures that the exact same instance as well as the same version of React will be available in both the library and the consumer.
+
+After the appropriate peer dependencies were added, all worked fine.
+
+
+
