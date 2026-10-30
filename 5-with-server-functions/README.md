@@ -63,7 +63,7 @@ So now we can move onto Server Functions themselves. These were in some ways rel
 
 ### Server-side
 
-So this project has what I believe to be the bare minimum. Server Functions are of course server-side, and therefore are handled by the RSC entrypoint. This now looks like this:
+I implemented what appears to be the bare-minimum for Server Functions. They are of course server-side, and therefore are handled by the RSC entrypoint. This now looks like this:
 
 ```typescript
 import * as ReactServer from '@vitejs/plugin-rsc/rsc';
@@ -253,15 +253,56 @@ export default ServerFunctionsTest {
 }
 ```
 
-The presumption in implementing this was that there would be a single instance of `client.ts`, which would be shared between the client RSC entrypoint and the consuming component (`ServerFunctionsTest`). However it turned out that, even though the instance of `client.ts` imported from the client RSC entrypoint initialised `root`, the `root` reference in the instance imported from `ServerFunctionsTest` was still `null` and thus the `refresh()` function could not run correctly. 
+However, when I tried this, I found that a crash occurred in the SSR entrypoint - with little exception info available. Eventually, and after much debugging I found that the probable cause was the use of `ReactClient` imports in the `client.ts` module, i.e. imports from `@vitejs/plugin-rsc`. This is likely to occur when SSR processes the `client.ts` import (remember this will occur server-side). If the `ReactClient` imports include browser-only APIs in module scope, these will be run by any `import` statements in the SSR environment, and as this is a server environment this will clearly not work.
 
-While I haven't seen any confirmation of this, I believe the reason is because the `client.ts` imported from the client RSC entrypoint is imported unbundled (as we saw earlier the client RSC entrypoint is not bundled but imported directly from the consuming app) while the `client.ts` imported by the `ServerFunctionsTest` consumer component is taken from the `vite-rsc-example` package and its bundle. Thus they have different sources and are different instances, and we cannot share the `root` between them.
+The exact same occurs if you try to import the client entrypoint directly into your own components. Because they are rendered server-side initially with SSR, any browser APIs at module scope within the client entrypoint (quite apart from `ReactClient` imports made from the entrypoint) will cause the SSR to crash as they are not available.
 
-How was this resolved? It was simply a case of using a consistent import, i.e. change the import of `setRoot()` in the RSC client entry point to a package-referenced import:
+How was this resolved? The `refresh()` logic was moved into the client entrypoint, and passed into the `client.ts` module by way of a callback. First the relevant client entrypoint code:
+
+```typescript
+export async function refreshCallback() {
+    console.log(`client: fetching ${window.location.href}`);
+
+    try {
+        if (root !== null) {
+            const tree = await ReactClient.createFromFetch<ReactNode>(fetch(window.location.href, {
+                headers: {
+                    'Cache-Control': 'no-cache',
+                    'x-no-ssr': '1'
+                }
+            }));
+            console.log('Got tree');
+            root.render(tree);
+            console.log('Tree rendered');
+
+        } else {
+            console.log("cannot render tree - root is null");
+        }
+    } catch (e) {
+        console.error('refresh(): Error', e);
+    }
+}
+
+setCallback(refreshCallback);
+
+
+```
+
+then the relevant `client.ts` code:
 
 ```tsx
-import { refresh } from 'vite-rsc-example/client';
+let callback: RefreshCallback | null = null;
+
+export function setCallback(cb: RefreshCallback) {
+    callback = cb;
+}
+
+export async function refresh() {
+    callback?.();
+}
 ```
+
+So `client.ts` does not contain any references to client-only APIs in the top-level scope, which may have been causing problems when it pulled in imports from `ReactClient`. Instead, the actual refresh logic is placed within the client entrypoint as a callback function, and passed to `client.ts` as a callback, keeping `client.ts` guaranteed free of client APIs at top level scope.
 
 ### Server side
 
@@ -332,9 +373,9 @@ So, a refresh is triggered when `addSongState.id` changes; it will do when the `
 
 ### Did this work?
 
-Yes, eventually, but only after a further change was made. I needed to specify `react` and `react-dom` as peer dependencies in the framework `package.json`. This is a good idea in any case, as it ensures that versions of React compatible with the version used to develop the framework will be installed by the client.
+A further change needed to be made for `useRefresh()` to work as expected. I needed to specify `react` and `react-dom` as peer dependencies in the framework `package.json`. To be honest this is a good idea in any case, as it ensures that versions of React matching those used to develop the framework will be imported by the client, ensuring compatibility.
 
-Even though in this case, all React versions were 19.3 so in theory there should have been no problems even with the omission of peer dependency declarations, I was getting a very hard-to-diagnose bug where the consuming package and the framework were using two separate instances of the same version of React, and the React used for `useEffect()` in the `useRefresh()` hook was apparently null at the SSR stage even though it should in theory be available. 
+In this case, all React versions were 19.3 so in theory there "should", presumably, have been no problems even with the omission of peer dependency declarations, however I was getting a very hard-to-diagnose bug where the consuming package and the framework were likely using two in-memory separate instances of React, and the `React` instance used for `useEffect()` in the `useRefresh()` hook was `null` at the SSR stage even though it should in theory be available. 
 
 I haven't got a definitive answer on this, but this may be due to the fact that peer dependency declaration ensures that the exact same instance as well as the same version of React will be available in both the library and the consumer.
 

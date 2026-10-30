@@ -50,11 +50,11 @@ plus one additonal feature:
 
 ### What was difficult and what was easy?
 
-The actual code isn't actually that complex or that lengthy, and much could be derived from the examples on the Vite RSC plugin GitHub repo. The main difficulties all revolved around the presence of multiple environments and the need to ensure that code was being imported from the correct environment. So for example, appreciating the multiple RSC, SSR and client Vite environments and ensuring that functions imported from the RSC entrypoint (for example) actually ran in the RSC environment.
+The actual code isn't actually that complex or that lengthy, and much could be derived from the examples on the Vite RSC plugin GitHub repo. The main difficulties all revolved around what I would call import and bundling issue. A particular consideration which came up a lot was the presence of multiple environments and the need to ensure that code was being imported from the correct environment. So for example, appreciating the multiple RSC, SSR and client Vite environments and ensuring that functions imported from the RSC entrypoint (for example) actually ran in the RSC environment.
 
-Bundling and importing from bundles also caused some issues, for example importing the same apparent module from a bundled copy (from the framework) and a non-bundled copy (directly from dependencies of the consumer app) resulted in different modules. Also in several places, a lack of externalisation caused problems.
+The other key take-away point, which is absolutely crucial when using any SSR framework, is that imports of SSR-ed components which contain browser APIs at module scope will fail spectacularly. The SSR will try to use the browser APIs, with predictable consequences. Going forward, this will be a very key point to take into account when using third-party APIs... do they support SSR, or will browser APIs at module scope trip things up?
 
-But overall it's been a fun project, and I've gained more insight into the process of working with the Vite RSC plugin and creating and, critically, using your own `npm` based library.
+Overall it's been a fun project, and I've gained more insight into the process of working with the Vite RSC plugin and how RSC/SSR actually works.
 
 ### What next?
 

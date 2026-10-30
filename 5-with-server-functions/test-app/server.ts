@@ -13,12 +13,21 @@ app.get('/api', (req, res) => {
     res.json({ api: true });
 });
 
-const handleRequest = await getRequestHandler(app); 
+const handleRequest = await getRequestHandler(app);
 
 app.use('/', async (req: ExpressRequest, res: ExpressResponse) => {
-    const request = createRequest(req, res, { host: process.env.HOST });
-    const response = await handleRequest(request);
-    return sendResponse(res, response);
+    console.log("/ handler");
+    try {
+        console.log("trying to handle request. creating request...")
+        const request = createRequest(req, res, { host: process.env.HOST });
+        console.log("calling handlerequest")
+        const response = await handleRequest(request);
+        console.log("sending response")
+        return sendResponse(res, response);
+    } catch (e) {
+        console.log("Error in servicing request")
+        throw e;
+    }
 });
 
 const PORT = 3000;

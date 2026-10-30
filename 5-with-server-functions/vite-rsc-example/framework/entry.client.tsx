@@ -1,10 +1,9 @@
 import { use, type ReactNode } from 'react';
 import { hydrateRoot } from 'react-dom/client';
 
-
 import { rscStream } from 'rsc-html-stream/client';
 import type { ReturnValue } from './types';
-import { setRoot } from 'vite-rsc-example/client';
+import { setCallback } from 'vite-rsc-example/client';
 import * as ReactClient from '@vitejs/plugin-rsc/browser';
 
 
@@ -15,13 +14,11 @@ function ClientRoot() {
 }
 
 
-
 const root = hydrateRoot(
     document,
     <ClientRoot />
 );
 
-setRoot(root);
 
 // Based on the @vitejs/plugin-rsc example at:
 // https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-rsc/examples/basic/src/framework/entry.browser.tsx
@@ -48,3 +45,30 @@ ReactClient.setServerCallback(async (id, args) => {
     if (!ok) throw data;
     return data;
 });
+
+export async function refreshCallback() {
+    console.log(`client: fetching ${window.location.href}`);
+
+    try {
+        if (root !== null) {
+            const tree = await ReactClient.createFromFetch<ReactNode>(fetch(window.location.href, {
+                headers: {
+                    'Cache-Control': 'no-cache',
+                    'x-no-ssr': '1'
+                }
+            }));
+            console.log('Got tree');
+            root.render(tree);
+            console.log('Tree rendered');
+
+        } else {
+            console.log("cannot render tree - root is null");
+        }
+    } catch (e) {
+        console.error('refresh(): Error', e);
+    }
+}
+
+setCallback(refreshCallback);
+
+

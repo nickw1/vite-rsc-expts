@@ -60,7 +60,7 @@ export default function ServerFunctionsTest() {
                 <p> {addSongState.id > 0 ? `Allocated ID: ${addSongState.id}` : ""}</p>
             </div>
             <div>
-            <button onClick={() => { refresh() }}>Click to refresh...</button>
+          
             </div>
         </div>
     );

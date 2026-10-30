@@ -3,14 +3,16 @@
   "name": "vite-rsc-example",
   "dependencies": {
     "@remix-run/node-fetch-server": "^1.0.0",
+    "better-sqlite3": "^13.0.3",
     "express": "^5.2.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-element-to-jsx-string": "^17.0.1",
-    "vite-rsc-example": "file:../3-npm-package/vite-rsc-example-0.0.1.tgz"
+    "vite-rsc-example": "file:../vite-rsc-example/vite-rsc-example-0.0.2.tgz"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^9.6.0",
+    "@types/express": "^5.0.6",
     "@types/node": "^26.6.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
@@ -22,6 +24,7 @@
   },
   "scripts": {
     "build": "vite-rsc-example build",
+    "dev": "NODE_ENV=development tsx server.ts",
     "start": "NODE_ENV=production tsx  server.ts"
   }
 }

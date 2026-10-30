@@ -2,7 +2,7 @@ import * as ReactServer from '@vitejs/plugin-rsc/rsc';
 
 import type { ComponentType, ReactElement } from 'react';
 import type { AppProps, RscPayload, ReturnValue } from './types';
-
+//import examineStream from './utils/examineStream';
 
 export default async function handleRequest(request: Request): Promise<Response> {
 
@@ -12,7 +12,7 @@ export default async function handleRequest(request: Request): Promise<Response>
     console.log(`Method: ${request.method} pathname ${url.pathname}`);
 
     const noSsr = request.headers.get("x-no-ssr") ? true : false;
-    
+
     console.log(`rsc: noSsr? ${noSsr}`);
 
     let isServerFunction = false;
@@ -49,6 +49,7 @@ export default async function handleRequest(request: Request): Promise<Response>
 
 
         // Convert RSC JSX to RSC payload
+        
         rscStream = ReactServer.renderToReadableStream<ReactElement>(
             App === null ? <h1>Cannot find component for path {path}</h1> : <App url={request.url} />
         );
@@ -63,6 +64,8 @@ export default async function handleRequest(request: Request): Promise<Response>
                 }
             });
         } else {
+            console.log("rsc: sending data to ssr");
+           
             const ssrEntryModule = await import.meta.viteRsc.import<
                 typeof import('./entry.ssr.tsx')
             >(
@@ -71,14 +74,17 @@ export default async function handleRequest(request: Request): Promise<Response>
 
 
             // Render the RSC stream to the HTML using the SSR module (i.e. server-side rendering)
+            console.log("rsc: sending data to ssr");
+             console.log('before renderHTML:', rscStream.locked);
             let htmlStream = await ssrEntryModule.renderHTML(rscStream) as ReadableStream;
-
+            console.log("got an html stream back, sending it back to client")
             return new Response(htmlStream, {
                 headers: {
                     'Content-Type': 'text/html;charset=utf-8'
                 },
                 status
             });
+
         }
     }
 }
