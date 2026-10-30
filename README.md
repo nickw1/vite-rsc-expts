@@ -1,8 +1,6 @@
-# What is this?
+# Creating a Vite-based RSC framework
 
-This repo documents a series of experiments to explore the capabilities of [`@vitejs/plugin-rsc`](https://www.npmjs.com/package/@vitejs/plugin-rsc), with the eventual aim (not yet realised) of producing a simple RSC framework.
-
-It's very much a work-in-progress: this document reflects the progress made so far.
+This repo documents a series of experiments to explore the capabilities of [`@vitejs/plugin-rsc`](https://www.npmjs.com/package/@vitejs/plugin-rsc) to produce a simple RSC framework. A prototype framework, with Express integration in mind, has now been completed - though there were a few hurdles along the way!
 
 ## Why?
 
@@ -37,3 +35,27 @@ These experiments come in multiple stages, each with their own README as a devel
 2. [Create a proof-of-concept for a micro-framework, integrating with Express](2-with-express/README.md).
 3. [Creating an installable NPM package of the framework](3-npm-package/README.md) - completed for production mode.
 4. [Implementing a dev server](4-with-dev-server/README.md)
+5. [Implementing Server Functions](5-with-server-functions/README.md)
+
+## Conclusions
+
+A working prototype framework has now been produced, supporting all the intended features, namely:
+
+- Express integration;
+- Simple filesystem router;
+- Server Functions;
+
+plus one additonal feature:
+- a `refresh()` function and accompanying `useRefresh()` hook, which came about through realisation that I needed an easy way to refresh the component tree if the database contents changed as a result of a Server Action.
+
+### What was difficult and what was easy?
+
+The actual code isn't actually that complex or that lengthy, and much could be derived from the examples on the Vite RSC plugin GitHub repo. The main difficulties all revolved around the presence of multiple environments and the need to ensure that code was being imported from the correct environment. So for example, appreciating the multiple RSC, SSR and client Vite environments and ensuring that functions imported from the RSC entrypoint (for example) actually ran in the RSC environment.
+
+Bundling and importing from bundles also caused some issues, for example importing the same apparent module from a bundled copy (from the framework) and a non-bundled copy (directly from dependencies of the consumer app) resulted in different modules. Also in several places, a lack of externalisation caused problems.
+
+But overall it's been a fun project, and I've gained more insight into the process of working with the Vite RSC plugin and creating and, critically, using your own `npm` based library.
+
+### What next?
+
+I intend to turn the prototype framework into a more stable library geared specifically at using RSCs from Express, initially, and attempt to port my [lilt](https://github.com/nickw1/lilt) tool to it, given the apparent archiving of my original framework of choice, `@lazarv/react-server`. That is a much bigger application - a lightweight learning environment - and critically, has a range of other dependencies. I can foresee that due to different approaches to bundling practice, problems may arise when using those third-party dependencies but we will see.
