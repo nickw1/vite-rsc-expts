@@ -2,11 +2,6 @@ import * as ReactServer from '@vitejs/plugin-rsc/rsc';
 
 import type { ComponentType, ReactElement } from 'react';
 import type { AppProps, RscPayload, ReturnValue } from './types';
-import { c } from '@vitejs/plugin-rsc/index-XXYjyFr6';
-
-//import examineStream from './utils/examineStream';
-//import { rscStream } from 'rsc-html-stream/client';
-
 
 
 export default async function handleRequest(request: Request): Promise<Response> {
@@ -49,14 +44,7 @@ export default async function handleRequest(request: Request): Promise<Response>
             const replace = path.replace(/^\/src|(index)?\.(jsx|tsx|js|ts)$/g, "").toLowerCase();
             componentRoutes[replace] = ((await loadModule() as any).default) as ComponentType<AppProps>;
         }
-
-        console.log(`rsc: NODE_ENV=${process.env.NODE_ENV}`);
-
-        console.log("componentRoutes:");
-        console.log(componentRoutes);
-
         const path = url.pathname;
-        console.log(`path of request is ${path}`);
 
         const App = componentRoutes[path] ?? componentRoutes[`${path}/`] ?? null;
         if (App === null) status = 404;
@@ -83,10 +71,6 @@ export default async function handleRequest(request: Request): Promise<Response>
                 './entry.ssr.tsx', { environment: 'ssr' }
             );
 
-            // check that the RSC payload is good
-
-            // console.log('RSC stream is:');
-            //rscStream = await examineStream(rscStream);
 
             // Render the RSC stream to the HTML using the SSR module (i.e. server-side rendering)
             let htmlStream = await ssrEntryModule.renderHTML(rscStream) as ReadableStream;
